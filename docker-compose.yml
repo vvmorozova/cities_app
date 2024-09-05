@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  db:
+    build:
+      context: ./db
+    image: db:latest
+    environment:
+      POSTGRES_USER: admin1
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: cdn
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  cities_app:
+      build:
+        context: ./cities_app 
+      image: cities_app:latest 
+      environment:
+        DATABASE_URL: postgresql://admin1:admin@db:5432/cdn 
+      ports:
+        - "5000:5000" 
+      depends_on:
+        - db  
+      entrypoint: ["/app/wait-for-postgres.sh", "python", "-m", "flask", "run", "--host=0.0.0.0", "--port=5000"]
+      networks:
+        - app-network
+
+volumes:
+  db-data:
+
+networks:
+  app-network:
